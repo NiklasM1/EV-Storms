@@ -40,7 +40,7 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
 		alerts(title: info_array[sender.tag][0], Text: info_array[sender.tag][1])
 	}
 	
-	@IBAction func Demo(_ sender: Any) {
+	@IBAction func Start(_ sender: Any) {
 		if !serial.isReady {
 			alerts(title: "Not connected", Text: "What am I supposed to send this to?")
 		} else if !finished {
@@ -167,9 +167,9 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
 				Image = UIImage(named: "Lego-\(count%5)")!
 				Progress = Float(count)/Float(gesamt)
 				if(count <= output[0]){label[0] = count}
-				if (count <= output[0]+output[1]) {label[1] = count - output[0]}
-				if (count <= output[0]+output[1]+output[2]) {label[2] = count - output[0] - output[1]}
-				if (count <= output[0]+output[1]+output[2]+output[3]) {label[3] = count - output[0] - output[1] - output[2]}
+				else if (count <= output[0]+output[1]) {label[1] = count - output[0]}
+				else if (count <= output[0]+output[1]+output[2]) {label[2] = count - output[0] - output[1]}
+				else if (count <= output[0]+output[1]+output[2]+output[3]) {label[3] = count - output[0] - output[1] - output[2]}
 				if(count==gesamt){finished = true}
 			default:
 				print("unknown message from arduino: \(message)")
