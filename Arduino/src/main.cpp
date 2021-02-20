@@ -44,7 +44,17 @@ void blink(int color) {
 	}
 	brightness(LOW_BRIGH);
 }
-
+void redring(int led) {
+	//Rotierender Roter Ring
+	if(leds[led]){
+		leds[led] = CRGB::Black;
+	} else {
+		leds[led] = CRGB::Red;
+	}
+	FastLED.show();
+	led_index++;
+	delay(50);
+}
 void greenring(int segment) {
 	switch(segment){
 		case 1:
@@ -83,6 +93,28 @@ void reset(){
 	send_count = 0;
 	output[0] = 'X';
 	acting = false;
+}
+
+void readBluetooth() {
+	//liest Bluetooth verbindung aus und speichert die Werte ab.
+	while(BTSerial.available()){
+		int x = BTSerial.read();
+		input[index] = char(x);
+		index++;
+	}
+	//wenn 7 zeichen empfangen wurden ist der Array vollständig und der erste Wert wird angepasst.
+	if((unsigned) index>sizeof(input)-1){
+		index = 0;
+		for(char a:input){
+			output[index + 1] = a;
+			index++;
+		}
+		index = 0;
+		output[0] = char(soll+48);
+		BTSerial.write("received");
+		Serial.print("Array: ");for(int i = 0; (unsigned)i<sizeof(input); ++i){Serial.print(input[i]);}Serial.print("\n");
+		blink(2);
+	}
 }
 
 //überprüfung des empfangenen
@@ -177,41 +209,12 @@ void setup()
 //loop
 void loop()
 {
-	//Falls etwas getan wurde wenn was vom Mindstorm kommt.
 	act(val);
 
-	//roter Led Ring
 	if(!acting){
-		//Rotierender Roter Ring
-		if(leds[led_index%NUM_LEDS]){
-			leds[led_index%NUM_LEDS] = CRGB::Black;
-		} else {
-			leds[led_index%NUM_LEDS] = CRGB::Red;
-		}
-		FastLED.show();
-		led_index++;
-		delay(50);
-	}
-
-	//liest Bluetooth verbindung aus.
-	if(BTSerial.available() && !acting){
-		while(BTSerial.available()){
-			int x = BTSerial.read();
-			input[index] = char(x);
-			index++;
-		}
-		//wenn 7 zeichen empfangen wurden ist der Array vollständig und der erste Wert wird angepasst.
-		if((unsigned) index>sizeof(input)-1){
-			index = 0;
-			for(char a:input){
-				output[index + 1] = a;
-				index++;
-			}
-			index = 0;
-			output[0] = char(soll+48);
-			BTSerial.write("received");
-			Serial.print("Array: ");for(int i = 0; (unsigned)i<sizeof(input); ++i){Serial.print(input[i]);}Serial.print("\n");
-			blink(2);
+		redring(led_index%NUM_LEDS);
+		if(BTSerial.available()) {
+			readBluetooth();
 		}
 	}
 }
