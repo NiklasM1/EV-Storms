@@ -40,7 +40,7 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
 		alerts(title: info_array[sender.tag][0], Text: info_array[sender.tag][1])
 	}
 	
-	@IBAction func Start(_ sender: Any) {
+	@IBAction func Demo(_ sender: Any) {
 		if !serial.isReady {
 			alerts(title: "Not connected", Text: "What am I supposed to send this to?")
 		} else if !finished {
@@ -154,23 +154,26 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
     func serialDidReceiveString(_ message: String) {
 		switch message {
 			case "finished", "restart":
+				reset()
 				finished = true
-				count = 0
+				Demo_button.isEnabled = true
 				alerts(title: "Finished", Text: "You may collect the medicin now.")
 			case "start", "received":
+				reset()
 				finished = false
-				count = 0
-				Progress = 0.0
-				Image = UIImage(named: "Lego-0")!
-			case "0","1","2","3","4","5","6","7","8","9":
+				Demo_button.isEnabled = false
+			case "0","1","2","3","4":
 				count = Int(message)!
-				Image = UIImage(named: "Lego-\(count%5)")!
+				Image = UIImage(named: "Lego-\(count)")!
 				Progress = Float(count)/Float(gesamt)
 				if(count <= output[0]){label[0] = count}
 				else if (count <= output[0]+output[1]) {label[1] = count - output[0]}
 				else if (count <= output[0]+output[1]+output[2]) {label[2] = count - output[0] - output[1]}
 				else if (count <= output[0]+output[1]+output[2]+output[3]) {label[3] = count - output[0] - output[1] - output[2]}
-				if(count==gesamt){finished = true}
+				if(count==gesamt){
+					finished = true
+					Demo_button.isEnabled = true
+				}
 			default:
 				print("unknown message from arduino: \(message)")
 		}
@@ -178,9 +181,9 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
     
     func serialDidDisconnect(_ peripheral: CBPeripheral, error: NSError?) {
         reloadView()
+		reset()
 		finished = true
-		Progress = 0
-		Image = UIImage(named: "Lego-0")!
+		Demo_button.isEnabled = true
         let hud = MBProgressHUD.showAdded(to: view, animated: true)
         hud?.mode = MBProgressHUDMode.text
         hud?.labelText = "Disconnected"
@@ -202,6 +205,7 @@ final class SerialViewController: UIViewController, UITextFieldDelegate, Bluetoo
         if serial.connectedPeripheral == nil {
             performSegue(withIdentifier: "ShowScanner", sender: self)
         } else {
+			serial.sendMessageToDevice("88")
             serial.disconnect()
             reloadView()
         }

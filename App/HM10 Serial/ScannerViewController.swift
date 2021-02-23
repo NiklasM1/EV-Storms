@@ -126,6 +126,7 @@ final class ScannerViewController: UIViewController, UITableViewDataSource, UITa
         serial.connectToPeripheral(selectedPeripheral!)
         progressHUD = MBProgressHUD.showAdded(to: view, animated: true)
         progressHUD!.labelText = "Connecting"
+		serial.sendMessageToDevice("89")
         
         // TODO: Timer doesn't use connecting ID
         Timer.scheduledTimer(timeInterval: 10, target: self, selector: #selector(ScannerViewController.connectTimeOut), userInfo: nil, repeats: false)
