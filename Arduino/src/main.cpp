@@ -12,8 +12,8 @@
 CRGB leds[NUM_LEDS];
 SoftwareSerial BTSerial(10, 11);
 
-int val, index=0, soll=0, pick_count = 0, led_index = 14, send_count = 0;
-boolean acting = false;
+int val, index=0, soll=0, pick_count = 0, led_index = 14, send_count = 0, gesamt = 0;
+boolean acting = false, ring = false;
 char input[7] = {'0','0','0','0','0','0','0'};
 char output[8] = {'X','0','0','0','0','0','0','0'};
 
@@ -55,8 +55,20 @@ void redring(int led) {
 	led_index++;
 	delay(50);
 }
-void greenring(int segment) {
-	switch(segment){
+void bluering(int led) {
+	//Rotierender Roter Ring
+	if(leds[led]){
+		leds[led] = CRGB::Black;
+	} else {
+		leds[led] = CRGB::Blue;
+	}
+	FastLED.show();
+	led_index++;
+	delay(50);
+}
+void greenring(int segment, boolean on) {
+	if(on){
+		switch(segment){
 		case 1:
 			for(int i = 14; i<21; ++i){
 				leds[i%NUM_LEDS] = CRGB::Green;
@@ -79,6 +91,32 @@ void greenring(int segment) {
 			break;
 		default:
 			break;
+		}
+	} else {
+		switch(segment){
+		case 1:
+			for(int i = 14; i<21; ++i){
+				leds[i%NUM_LEDS] = CRGB::Black;
+			}
+			break;
+		case 2:
+			for(int i = 20; i<26; ++i){
+				leds[i%NUM_LEDS] = CRGB::Black;
+			}
+			break;
+		case 3:
+			for(int i = 2; i<8; ++i){
+				leds[i%NUM_LEDS] = CRGB::Black;
+			}
+			break;
+		case 0:
+			for(int i = 8; i<14; ++i){
+				leds[i%NUM_LEDS] = CRGB::Black;
+			}
+			break;
+		default:
+			break;
+		}
 	}
 	FastLED.show();
 }
@@ -88,6 +126,7 @@ void reset(){
 	val = 0;
 	index = 0;
 	soll = 0;
+	gesamt = 0;
 	pick_count = 0;
 	led_index = 14;
 	send_count = 0;
@@ -95,11 +134,22 @@ void reset(){
 	acting = false;
 }
 
+//erledigt Bluetooth kram
 void readBluetooth() {
 	//liest Bluetooth verbindung aus und speichert die Werte ab.
 	while(BTSerial.available()){
 		int x = BTSerial.read();
+		if(x == 88 || x == 89){
+			fadeall();
+			if(x==89){
+				ring = true;
+				return;
+			}
+			ring = false;
+			return;
+		}
 		input[index] = char(x);
+		gesamt += int(x);
 		index++;
 	}
 	//wenn 7 zeichen empfangen wurden ist der Array vollständig und der erste Wert wird angepasst.
@@ -111,6 +161,7 @@ void readBluetooth() {
 		}
 		index = 0;
 		output[0] = char(soll+48);
+		output[1] = char(gesamt+48);
 		BTSerial.write("received");
 		Serial.print("Array: ");for(int i = 0; (unsigned)i<sizeof(input); ++i){Serial.print(input[i]);}Serial.print("\n");
 		blink(2);
@@ -128,6 +179,7 @@ void act(int value){
 				{	
 					BTSerial.write("restart");
 					reset();
+					ring = false;
 					fadeall();
 					break;
 				}
@@ -148,21 +200,37 @@ void act(int value){
 					blink(1);
 					break;
 				}
+			case 9:
+				{
+					fadeall();
+					for (int i = 0; i < gesamt; i++)
+					{
+						greenring(4-i, true);
+					}
+					break;
+				}
+			case 10:
+				{
+					gesamt--;
+					greenring(4-gesamt, false);
+				}
 			//Mindstorm hat Reagenzglas aufgehoben
 			case 20:
 				{
 					pick_count++;
 					BTSerial.write(char(pick_count + 48));
-					greenring(pick_count%4);
+					greenring(pick_count%4, true);
 					break;
 				}
 			//Mindstorm ist fertig
 			case 100:
-				{
+			case 101:
+				{	
 					if(acting){
 						BTSerial.write("finished");
 						blink(3);
 					}
+					fadeall();
 					reset();
 					break;
 				}
@@ -212,7 +280,11 @@ void loop()
 	act(val);
 
 	if(!acting){
-		redring(led_index%NUM_LEDS);
+		if(!ring){
+			bluering(led_index%NUM_LEDS);
+		} else {
+			redring(led_index%NUM_LEDS)
+		}
 		if(BTSerial.available()) {
 			readBluetooth();
 		}
