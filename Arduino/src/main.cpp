@@ -217,6 +217,7 @@ void act(int value){
 			//Mindstorm hat Reagenzglas aufgehoben
 			case 20:
 				{
+					acting = true;
 					pick_count++;
 					BTSerial.write(char(pick_count + 48));
 					greenring(pick_count%4, true);
@@ -283,7 +284,7 @@ void loop()
 		if(!ring){
 			bluering(led_index%NUM_LEDS);
 		} else {
-			redring(led_index%NUM_LEDS)
+			redring(led_index%NUM_LEDS);
 		}
 		if(BTSerial.available()) {
 			readBluetooth();
